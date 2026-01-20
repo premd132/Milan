@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Kalyan – Pattern System</title>
+<title>Milan – Pattern System</title>
 <style>
 body{font-family:Arial}
 table{border-collapse:collapse;font-size:13px}
@@ -18,7 +18,7 @@ button{margin:4px}
 </head>
 <body>
 
-<h2>Kalyan – Pattern System</h2>
+<h2>Milan – Pattern System</h2>
 <input type="file" id="csv">
 <button onclick="addRow()">Add Row</button>
 <button onclick="saveData()">Save</button>
@@ -40,7 +40,7 @@ button{margin:4px}
 </div>
 
 <script>
-const STORAGE_KEY="pdata_kalyan";
+const STORAGE_KEY = "pdata_milan";   // 🔴 Milan ka alag data
 
 let targetCol=null;
 const tbl=document.getElementById("tbl");
@@ -78,7 +78,7 @@ function smartMatch(a,b){
 }
 
 /* DATA */
-let data=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
+let data=JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
 if(!data){
  data=[
  ["51","91","41","57","19","95"],
@@ -117,10 +117,10 @@ function edit(r,c,el){data[r][c]=norm(el.innerText.trim());}
 function addRow(){data.push(["","","","","",""].map(norm));draw();}
 function saveData(){
  localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
- alert("Saved only for Kalyan page");
+ alert("Saved only for Milan page");
 }
 
-/* CSV */
+/* CSV UPLOAD */
 csv.onchange=e=>{
  let fr=new FileReader();
  fr.onload=()=>{
@@ -135,7 +135,8 @@ csv.onchange=e=>{
  fr.readAsText(e.target.files[0]);
 };
 
-/* ===== Tumhara original pattern + AI + future AI code (unchanged) ===== */
+/* ===== NEECHAY KALYAN JAISA HI PATTERN + AI + FUTURE AI ===== */
+/* (Tum jo logic use kar rahe ho – wahi yahan bhi chalega) */
 
 /* PATTERN */
 let lastMatches=[],topMatches=[];
@@ -243,7 +244,6 @@ function showAISuggestions(shape){
  });
 
  if(!pool.length){future.innerHTML="No future data";return;}
-
  let jc={},dc={};
  pool.forEach(v=>{
   jc[v]=(jc[v]||0)+1;
