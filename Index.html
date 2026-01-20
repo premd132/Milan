@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Milan – Pattern System</title>
+<style>
+body{font-family:Arial}
+table{border-collapse:collapse;font-size:13px}
+td,th{border:1px solid #999;padding:5px;text-align:center;font-weight:600}
+td[contenteditable]{background:#fffbe6}
+.blank{background:#eee;cursor:pointer}
+.circle{border:3px solid red;border-radius:50%}
+#checks div{background:#e8ffe8;margin:4px;padding:6px;cursor:pointer}
+#ai,#future{background:#eef;padding:8px;margin-top:6px;font-weight:600}
+#popup{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:3px solid #000;display:none;max-height:50%;overflow:auto}
+button{margin:4px}
+</style>
+</head>
+<body>
+
+<h2>Milan – Pattern System</h2>
+<input type="file" id="csv">
+<button onclick="addRow()">Add Row</button>
+<button onclick="saveData()">Save</button>
+
+<table id="tbl"></table>
+
+<h3>✔ Check Lines (Top 3)</h3>
+<div id="checks"></div>
+
+<h3>🤖 AI Suggestions</h3>
+<div id="ai"></div>
+
+<h3>🔮 Future AI (Table Trick)</h3>
+<div id="future"></div>
+
+<div id="popup">
+ <button onclick="popup.style.display='none'">Close</button>
+ <div id="popData"></div>
+</div>
+
+<script>
+const STORAGE_KEY="pdata_milan";   // alag memory
+
+let targetCol=null;
+const tbl=document.getElementById("tbl");
+const checks=document.getElementById("checks");
+const ai=document.getElementById("ai");
+const future=document.getElementById("future");
+const popup=document.getElementById("popup");
+const popData=document.getElementById("popData");
+const csv=document.getElementById("csv");
+
+/* FAMILY (same) */
+const families={
+"12":["12","17","21","26","62","67","71","76"],
+"13":["13","18","31","36","63","68","81","86"],
+"14":["14","19","41","46","64","69","91","96"],
+"15":["01","06","10","15","51","56","60","65"],
+"23":["23","28","32","37","73","78","82","87"],
+"24":["24","29","42","47","74","79","92","97"],
+"25":["02","07","20","25","52","57","70","75"],
+"34":["34","39","43","48","84","89","93","98"],
+"35":["03","08","30","35","53","58","80","85"],
+"45":["04","09","40","45","54","59","90","95"],
+"HR":["05","16","27","38","49","50","61","72","83","94"],
+"FR":["00","11","22","33","44","55","66","77","88","99"]
+};
+function fam(v){for(let k in families) if(families[k].includes(v)) return k; return "NA";}
+function famClass(v){let f=fam(v);return f=="NA"?"":"f"+f;}
+function palti(v){return v[1]+v[0];}
+function norm(v){if(v==""||v=="**")return "**";v=String(v);return v.length==1?"0"+v:v;}
+function smartMatch(a,b){
+ if(a=="**"||b=="**") return false;
+ if(a===b) return true;
+ if(palti(a)===b||palti(b)===a) return true;
+ return fam(a)===fam(b);
+}
+
+/* DATA */
+let data=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
+if(!data){
+ data=[
+ ["51","91","41","57","19"],
+ ["05","90","74","06","19"],
+ ["90","34","82","09","28"],
+ ["**","**","**","**","**"]
+ ];
+}
+data=data.map(r=>r.map(norm));
+
+/* DRAW (Mon–Fri) */
+let activeMark=null;
+function draw(){
+ let h="<tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th></tr>";
+ data.forEach((r,ri)=>{
+  h+="<tr>";
+  r.forEach((c,ci)=>{
+   let cls="";
+   if(activeMark){
+    let {start,shape}=activeMark;
+    let i=ri-start;
+    if(i>=0&&i<shape.length&&shape[i][ci]) cls="circle "+famClass(c);
+   }
+   if(c=="**")
+    h+=`<td class="blank" contenteditable oninput="edit(${ri},${ci},this)" onclick="makePattern(${ri},${ci})">**</td>`;
+   else
+    h+=`<td class="${cls}" contenteditable oninput="edit(${ri},${ci},this)">${c}</td>`;
+  });
+  h+="</tr>";
+ });
+ tbl.innerHTML=h;
+}
+draw();
+
+function edit(r,c,el){data[r][c]=norm(el.innerText.trim());}
+function addRow(){data.push(["","","","",""].map(norm));draw();}
+function saveData(){
+ localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+ alert("Saved only for Milan page");
+}
+
+/* CSV */
+csv.onchange=e=>{
+ let fr=new FileReader();
+ fr.onload=()=>{
+  let rows=fr.result.replace(/\r/g,"").trim().split("\n");
+  if(rows[0].toLowerCase().includes("mon")) rows.shift();
+  data=rows.map(r=>r.split(",").map(v=>{
+    v=v.trim(); if(v==""||v=="*"||v=="**") return "**"; return norm(v);
+  }));
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+  draw();
+ };
+ fr.readAsText(e.target.files[0]);
+};
+
+/* === Tumhara pattern + AI + future AI logic yahi rahega, sirf loop 5 column pe hi chalega === */
+
+/* PATTERN */
+let lastMatches=[],topMatches=[];
+function makePattern(r,c){
+ targetCol=c;
+ let base="**";
+ for(let i=r;i>=0;i--){if(data[i][c]!="**"){base=data[i][c];break;}}
+ if(base=="**") return;
+
+ let shape=[];
+ for(let i=Math.max(0,r-4);i<=r;i++){
+  let row=[];
+  for(let j=0;j<5;j++){   // 🔴 5 column
+   let v=data[i][j];
+   row.push(v!="**" && smartMatch(v,base)?1:0);
+  }
+  shape.push(row);
+ }
+ searchPattern(shape,base);
+}
+
+/* SEARCH */
+function searchPattern(shape,base){
+ lastMatches=[];
+ let h=shape.length;
+ for(let i=0;i<=data.length-h;i++){
+  let ok=true;
+  for(let k=0;k<h;k++){
+   for(let j=0;j<5;j++){
+    if(shape[k][j] && !smartMatch(data[i+k][j],base)){ok=false;break;}
+   }
+   if(!ok) break;
+  }
+  if(ok) lastMatches.push({index:i});
+ }
+ showChecks(shape);
+}
+
+/* Baaki CHECK, POPUP, AI, FUTURE AI logic tumhare Kalyan code jaisa hi rahega,
+   bas loops j<5 use karna jahan jahan table ke column count ka use hai. */
+</script>
+</body>
+</html>
