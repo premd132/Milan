@@ -40,7 +40,7 @@ button{margin:4px}
 </div>
 
 <script>
-const STORAGE_KEY="pdata_kalyan";
+const STORAGE_KEY="pdata_Milan";
 
 let targetCol=null;
 const tbl=document.getElementById("tbl");
@@ -178,7 +178,7 @@ function searchPattern(shape,base){
 function showChecks(shape){
  checks.innerHTML="";
  if(lastMatches.length==0){checks.innerHTML="<i>No match</i>";ai.innerHTML="";future.innerHTML="";return;}
- topMatches=lastMatches.slice(0,3);
+ topMatches=lastMatches.slice(0,4);
  topMatches.forEach((m,i)=>{
   let d=document.createElement("div");
   d.innerText=(i+1)+". Match (click)";
