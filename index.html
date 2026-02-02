@@ -175,9 +175,9 @@ function makePattern(r,c){
  if(base=="**") return;
 
  let shape=[];
- for(let i=Math.max(0,r-4);i<=r;i++){
+ for(let i=Math.max(0,r-6);i<=r;i++){
   let row=[];
-  for(let j=0;j<6;j++){
+  for(let j=0;j<10;j++){
    let v=data[i][j];
    row.push(v!="**" && smartMatch(v,base)?1:0);
   }
