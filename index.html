@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Milan Pro AI - Advanced</title>
+    <title>Milan Pro AI - Future Predictor</title>
     <style>
-        :root { --gold: #ffd700; --blue: #0084ff; --bg: #0f172a; --panel: #1e293b; --green: #00ff88; }
+        :root { --gold: #ffd700; --blue: #0084ff; --bg: #0f172a; --panel: #1e293b; --green: #00ff88; --red: #ff4444; }
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; margin: 0; padding: 0; }
         body { background: var(--bg); color: #fff; padding: 10px; }
         .toolbar { display: flex; gap: 8px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap; }
@@ -15,87 +15,46 @@
         td, th { border: 1px solid #ddd; width: 48px; height: 48px; text-align: center; font-weight: 800; font-size: 14px; cursor: pointer; }
         th { background: #1e293b; color: white; font-size: 10px; }
         
-        /* Marking Styles */
         .circle { border: 3px solid var(--blue) !important; border-radius: 50% !important; background: rgba(0, 132, 255, 0.15); z-index: 12; position: relative;}
         .selected-jodi { background: rgba(255, 215, 0, 0.4) !important; border: 2px dashed var(--gold) !important; }
         
         canvas { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 5; }
         
-        /* AI Dashboard Styles */
         .ai-card { background: var(--panel); padding: 15px; border-radius: 15px; border-top: 4px solid var(--gold); margin-top: 10px; }
-        .check-line-container { margin-top: 15px; max-height: 250px; overflow-y: auto; }
-        .match-item { 
-            background: #2a3441; 
-            margin: 8px 0; 
-            padding: 12px; 
-            cursor: pointer; 
-            border-left: 5px solid var(--blue); 
-            border-radius: 5px; 
-            display: flex; 
-            justify-content: space-between;
-            align-items: center;
-            transition: 0.3s;
-            font-size: 14px;
-        }
-        .match-item:hover { background: #3d4a5d; transform: scale(1.02); }
-        .match-item b { color: var(--gold); }
+        .predict-box { display: flex; gap: 10px; margin-top: 10px; justify-content: center; }
+        .pair-card { background: #000; color: var(--green); padding: 15px; border-radius: 10px; font-size: 20px; font-weight: bold; border: 1px solid var(--green); min-width: 60px; text-align: center; }
+        
+        .match-item { background: #2a3441; margin: 8px 0; padding: 12px; cursor: pointer; border-left: 5px solid var(--blue); border-radius: 5px; display: flex; justify-content: space-between; transition: 0.3s; font-size: 14px; }
+        .match-item:hover { background: #3d4a5d; }
     </style>
 </head>
 <body>
-    <h2 style="text-align:center; color:var(--gold); margin-bottom:15px;">MILAN DUAL-LOGIC AI</h2>
+    <h2 style="text-align:center; color:var(--gold); margin-bottom:15px;">MILAN FUTURE AI</h2>
     
     <div class="toolbar">
         <input type="file" id="csv-m" style="display:none" onchange="loadCSV(this)" accept=".csv">
         <button class="tool-btn" onclick="document.getElementById('csv-m').click()">📂 CSV</button>
         <button class="tool-btn" onclick="addRow()">➕ ROW</button>
         <button class="tool-btn" onclick="saveData()" style="background:#28a745;">💾 SAVE</button>
-        <button class="tool-btn" onclick="resetSelection()" style="background:#dc3545;">🔄 RESET</button>
+        <button class="tool-btn" onclick="resetSelection()" style="background:var(--red);">🔄 RESET</button>
     </div>
 
-    <center>
-        <div class="table-container">
-            <canvas id="cvs"></canvas>
-            <table id="tbl"></table>
-        </div>
-    </center>
+    <center><div class="table-container"><canvas id="cvs"></canvas><table id="tbl"></table></div></center>
+
+    <div class="ai-card" id="future-ai" style="display:none;">
+        <h3 style="color:var(--green); font-size: 16px; text-align: center;">🚀 FUTURE AI 3-PAIR PREDICTION</h3>
+        <div class="predict-box" id="prediction-list"></div>
+    </div>
 
     <div class="ai-card">
         <h3 style="color:var(--gold); font-size: 16px; border-bottom: 1px solid #444; padding-bottom: 5px;">✔ CHECK LINE (RESULTS)</h3>
-        <div id="instruction" style="color: #ccc; font-size: 12px; margin: 10px 0;">
-            1. Lock a Jodi (Yellow) -> 2. Click Blank (**) -> 3. Select Match below.
-        </div>
-        <div id="status" class="check-line-container">Waiting for selection...</div>
+        <div id="status" style="margin-top:10px;">Waiting for selection...</div>
     </div>
 
 <script>
-let activeP = null, col = 6;
-let selectedJodi = null; 
-
+let activeP = null, col = 6, selectedJodi = null; 
 const fams={"12":["12","17","21","26","62","67","71","76"],"13":["13","18","31","36","63","68","81","86"],"14":["14","19","41","46","64","69","91","96"],"15":["01","06","10","15","51","56","60","65"],"23":["23","28","32","37","73","78","82","87"],"24":["24","29","42","47","74","79","92","97"],"25":["02","07","20","25","52","57","70","75"],"34":["34","39","43","48","84","89","93","98"],"35":["03","08","30","35","53","58","80","85"],"45":["04","09","40","45","54","59","90","95"],"HR":["05","16","27","38","49","50","61","72","83","94"],"FR":["00","11","22","33","44","55","66","77","88","99"]};
-
 let data = JSON.parse(localStorage.getItem("MILAN_FILE_DB")) || [["51","91","41","57","19","95"],["05","90","74","06","19","63"],["**","**","**","**","**","**"]];
-
-function loadCSV(input) {
-    const file = input.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const text = e.target.result;
-            const lines = text.split('\n').filter(l => l.trim() !== '');
-            data = lines.map(line => {
-                let cells = line.split(',').map(v => {
-                    let val = v.trim();
-                    return val === "" ? "**" : (val.length === 1 ? "0" + val : val);
-                });
-                while(cells.length < col) cells.push("**");
-                return cells.slice(0, col);
-            });
-            render();
-            alert("CSV Uploaded Successfully!");
-        };
-        reader.readAsText(file);
-    }
-}
 
 function render() {
     let h = "<tr><th>MON</th><th>TUE</th><th>WED</th><th>THU</th><th>FRI</th><th>SAT</th></tr>";
@@ -104,12 +63,8 @@ function render() {
         r.forEach((v, ci) => {
             let isM = activeP && ri >= activeP.start && ri < activeP.start + activeP.shape.length && activeP.shape[ri-activeP.start][ci];
             let isSel = selectedJodi && selectedJodi.r === ri && selectedJodi.c === ci;
-            h += `<td class="${isM?'circle':''} ${isSel?'selected-jodi':''}" 
-                  contenteditable="${v!=='**'}" 
-                  oninput="upd(${ri},${ci},this)" 
-                  onclick="handleCellClick(${ri},${ci},'${v}')">${v}</td>`;
-        }); 
-        h += "</tr>"; 
+            h += `<td class="${isM?'circle':''} ${isSel?'selected-jodi':''}" onclick="handleCellClick(${ri},${ci},'${v}')">${v}</td>`;
+        }); h += "</tr>"; 
     });
     document.getElementById('tbl').innerHTML = h; 
     if(activeP) setTimeout(drawL, 50);
@@ -118,96 +73,88 @@ function render() {
 function handleCellClick(r, c, val) {
     if (val !== "**") {
         selectedJodi = { r, c, val };
-        document.getElementById('instruction').innerText = "Jodi Locked! Click a Blank (**) cell now.";
         render();
-    } else {
-        if (!selectedJodi) {
-            alert("Pehle kisi Jodi par click karein!");
-            return;
-        }
+    } else if (selectedJodi) {
         findP(r, c);
     }
 }
 
 function findP(blankR, blankC) {
     let base = "**";
-    for(let i=blankR; i>=0; i--) { if(data[i][blankC]!="**") { base=data[i][blankC]; break; } }
+    for(let i=blankR-1; i>=0; i--) { if(data[i][blankC]!="**") { base=data[i][blankC]; break; } }
     if(base=="**") return;
 
     let relR = selectedJodi.r - blankR;
     let relC = selectedJodi.c - blankC;
+    let shape = [], matches = [], predictions = [];
 
-    let shape = []; 
+    // Pattern capture (last 3 rows)
     for(let i=Math.max(0, blankR-3); i<=blankR; i++) {
-        let row = []; 
-        for(let j=0; j<col; j++) { 
-            row.push(data[i][j]!="**" && (data[i][j]===base || checkF(data[i][j], base))?1:0); 
-        }
+        let row = []; for(let j=0; j<col; j++) { row.push(data[i][j]!="**" && checkF(data[i][j], base)?1:0); }
         shape.push(row);
     }
 
-    let matches = []; 
-    for(let i=0; i<=data.length-shape.length; i++) {
-        let ok = true; 
-        for(let k=0; k<shape.length; k++) { 
-            for(let j=0; j<col; j++) { 
-                if(shape[k][j] && !(data[i+k][j]===base || checkF(data[i+k][j], base))) {ok=false; break;} 
-            } 
-            if(!ok) break; 
+    // Search History
+    for(let i=0; i<=data.length-shape.length-1; i++) {
+        let ok = true;
+        for(let k=0; k<shape.length; k++) {
+            for(let j=0; j<col; j++) { if(shape[k][j] && !checkF(data[i+k][j], base)) { ok=false; break; } }
+            if(!ok) break;
         }
-        
-        if (ok) {
-            let targetRow = i + shape.length - 1 + relR;
-            let targetCol = blankC + relC;
-            if (data[targetRow] && data[targetRow][targetCol]) {
-                let targetVal = data[targetRow][targetCol];
-                if (!(targetVal === selectedJodi.val || checkF(targetVal, selectedJodi.val))) {
-                    ok = false;
-                }
-            } else { ok = false; }
+        if(ok) {
+            let targetVal = data[i + shape.length - 1 + relR]?.[blankC + relC];
+            if(targetVal && checkF(targetVal, selectedJodi.val)) {
+                matches.push(i);
+                // AI Prediction: Agle din kya aaya tha us history mein?
+                let nextVal = data[i + shape.length - 1][blankC];
+                if(nextVal && nextVal!=="**") predictions.push(nextVal);
+            }
         }
-        if(ok) matches.push(i);
     }
     displayMatches(matches, shape);
+    showPredictions(predictions);
 }
 
 function displayMatches(matches, shape) {
-    let box = document.getElementById('status'); 
-    if(matches.length === 0) {
-        box.innerHTML = "<div style='padding:10px; color:#ff4444;'>No matches found for this dual logic.</div>";
-        return;
-    }
-    
-    box.innerHTML = "";
+    let box = document.getElementById('status');
+    box.innerHTML = matches.length ? "" : "<div style='color:var(--red)'>No exact pattern found in history.</div>";
     matches.forEach((idx, i) => {
-        let d = document.createElement("div"); 
-        d.className = "match-item";
-        d.innerHTML = `<span><b>Match #${i+1}</b> Found at Row ${idx+1}</span> <span>➔</span>`; 
-        d.onclick = () => { 
-            activeP = {start:idx, shape:shape}; 
-            render(); 
-        };
+        let d = document.createElement("div"); d.className = "match-item";
+        d.innerHTML = `<span><b>Match #${i+1}</b> Week ${idx+1}</span> ➔`;
+        d.onclick = () => { activeP = {start:idx, shape:shape}; render(); };
         box.appendChild(d);
     });
 }
 
-function resetSelection() { selectedJodi = null; activeP = null; render(); document.getElementById('status').innerHTML = "Waiting for selection..."; }
-function checkF(v1, v2) { for(let k in fams) { if(fams[k].includes(v1) && fams[k].includes(v2)) return true; } return false; }
-function upd(r, c, el) { data[r][c] = el.innerText.trim(); }
-function addRow() { data.push(Array(col).fill("**")); render(); }
-function saveData() { localStorage.setItem("MILAN_FILE_DB", JSON.stringify(data)); alert("Milan Saved!"); }
+function showPredictions(preds) {
+    let pBox = document.getElementById('prediction-list');
+    let aiCard = document.getElementById('future-ai');
+    if(preds.length > 0) {
+        aiCard.style.display = "block";
+        let unique = [...new Set(preds)].slice(0, 3);
+        pBox.innerHTML = unique.map(p => `<div class="pair-card">${p}</div>`).join("");
+    } else { aiCard.style.display = "none"; }
+}
 
+function checkF(v1, v2) { 
+    if(v1===v2) return true;
+    for(let k in fams) { if(fams[k].includes(v1) && fams[k].includes(v2)) return true; } 
+    return false; 
+}
+function loadCSV(input) {
+    let fr = new FileReader();
+    fr.onload = () => { data = fr.result.split('\n').filter(l=>l.trim()).map(l=>l.split(',').slice(0,col)); render(); };
+    fr.readAsText(input.files[0]);
+}
+function addRow() { data.push(Array(col).fill("**")); render(); }
+function saveData() { localStorage.setItem("MILAN_FILE_DB", JSON.stringify(data)); alert("Saved!"); }
+function resetSelection() { selectedJodi = null; activeP = null; render(); document.getElementById('future-ai').style.display="none"; }
 function drawL() {
     const cvs = document.getElementById('cvs'), ctx = cvs.getContext("2d"), tbl = document.getElementById('tbl');
     cvs.width = tbl.offsetWidth; cvs.height = tbl.offsetHeight;
     const cells = tbl.querySelectorAll(".circle"), rT = tbl.getBoundingClientRect();
-    ctx.clearRect(0,0,cvs.width,cvs.height);
-    ctx.strokeStyle = "#00ff88"; ctx.lineWidth = 3; ctx.beginPath();
-    cells.forEach((c, i) => { 
-        const r = c.getBoundingClientRect(); 
-        const x = r.left - rT.left + r.width/2, y = r.top - rT.top + r.height/2; 
-        if(i==0) ctx.moveTo(x,y); else ctx.lineTo(x,y); 
-    });
+    ctx.clearRect(0,0,cvs.width,cvs.height); ctx.strokeStyle = "#00ff88"; ctx.lineWidth = 3; ctx.beginPath();
+    cells.forEach((c, i) => { const r = c.getBoundingClientRect(); const x = r.left - rT.left + r.width/2, y = r.top - rT.top + r.height/2; if(i==0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
     ctx.stroke();
 }
 render();
