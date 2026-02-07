@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Milan Pro AI - Deep Scan</title>
+    <title>Milan Pro AI - Clean Logic</title>
     <style>
         :root { --gold: #ffd700; --blue: #0084ff; --bg: #0f172a; --panel: #1e293b; --green: #00ff88; }
         * { box-sizing: border-box; font-family: sans-serif; margin: 0; padding: 0; }
@@ -12,22 +12,23 @@
         .tool-btn { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; background: #334155; }
         .table-container { position: relative; background: #fff; border-radius: 12px; padding: 8px; display: inline-block; }
         table { border-collapse: collapse; color: #000; position: relative; z-index: 10; }
-        td, th { border: 1px solid #ddd; width: 42px; height: 42px; text-align: center; font-weight: 800; font-size: 13px; cursor: pointer; }
+        td, th { border: 1px solid #ddd; width: 45px; height: 45px; text-align: center; font-weight: 800; font-size: 14px; cursor: pointer; }
         th { background: #1e293b; color: white; font-size: 10px; }
         
+        /* Fixed 3-4 Circles Style */
         .circle { border: 3px solid var(--blue) !important; border-radius: 50% !important; background: rgba(0, 132, 255, 0.2); position: relative; z-index: 11; }
-        .selected-jodi { background: rgba(255, 215, 0, 0.6) !important; border: 2px solid var(--gold) !important; }
+        .selected-jodi { background: rgba(255, 215, 0, 0.5) !important; border: 2px solid var(--gold) !important; }
         
         canvas { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 5; }
         .ai-card { background: var(--panel); padding: 15px; border-radius: 15px; border-top: 4px solid var(--gold); margin-top: 15px; }
         
-        .check-item { background: #111; padding: 12px; margin: 5px 0; border-left: 4px solid var(--blue); cursor: pointer; display: flex; justify-content: space-between; border-radius: 5px; }
-        .future-box { display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
-        .pair-chip { background: #000; color: var(--green); border: 2px solid var(--green); padding: 8px 15px; border-radius: 8px; font-size: 20px; font-weight: bold; }
+        .check-item { background: #111; padding: 12px; margin: 5px 0; border-left: 4px solid var(--blue); cursor: pointer; display: flex; justify-content: space-between; }
+        .future-box { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+        .pair-chip { background: #000; color: var(--green); border: 2px solid var(--green); padding: 10px 15px; border-radius: 10px; font-size: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h2 style="text-align:center; color:var(--gold); margin-bottom:15px;">MILAN DEEP-SCAN AI (8-ROW)</h2>
+    <h2 style="text-align:center; color:var(--gold); margin-bottom:15px;">MILAN CLEAN-SCAN AI</h2>
     
     <div class="toolbar">
         <input type="file" id="csv-m" style="display:none" onchange="loadCSV(this)" accept=".csv">
@@ -45,8 +46,8 @@
     </div>
 
     <div class="ai-card">
-        <h3 style="color:var(--gold);">✔ CHECK LINE (1.2.3 RESULTS)</h3>
-        <div id="status" style="font-size: 13px; color: #aaa; margin-top: 10px;">Select a Jodi, then a Blank (**) cell.</div>
+        <h3 style="color:var(--gold);">✔ CHECK LINE (RESULTS)</h3>
+        <div id="status">Select Jodi -> Click Blank (**).</div>
     </div>
 
 <script>
@@ -75,52 +76,55 @@ function processLogic(blankR, blankC) {
     for(let i=blankR-1; i>=0; i--) { if(data[i][blankC]!="**") { base=data[i][blankC]; break; } }
     if(base=="**") return;
 
-    // Scan Depth: 8 Rows (3 to 8 range)
+    // STEP: Find 3-4 Best Family Matches in last 8 rows
     let startRow = Math.max(0, blankR - 8);
-    let shape = [];
-    for(let i = startRow; i <= blankR; i++) {
-        let row = []; for(let j=0; j<col; j++) { row.push(data[i][j]!="**" && checkF(data[i][j], base)?1:0); }
-        shape.push(row);
+    let shape = Array.from({length: blankR - startRow + 1}, () => Array(col).fill(0));
+    let matchCount = 0;
+
+    // Loop reverse to find 4 most recent matches
+    for(let i = blankR; i >= startRow; i--) {
+        for(let j = 0; j < col; j++) {
+            if(matchCount < 4 && data[i][j] !== "**" && checkF(data[i][j], base)) {
+                shape[i - startRow][j] = 1;
+                matchCount++;
+            }
+        }
     }
     
     activeP = { start: startRow, shape: shape };
     render();
 
+    // Search Logic for Check Line & Prediction
     let relR = selectedJodi.r - blankR;
     let relC = selectedJodi.c - blankC;
     let matches = [], predictions = [];
 
-    // Historical Deep Search
     for(let i=0; i <= data.length - shape.length - 1; i++) {
-        let score = 0, total = 0;
+        let ok = true;
         for(let k=0; k<shape.length; k++) {
-            for(let j=0; j<col; j++) { 
-                if(shape[k][j]) { 
-                    total++; if(checkF(data[i+k][j], base)) score++; 
-                } 
+            for(let j=0; j<col; j++) {
+                if(shape[k][j] && !checkF(data[i+k][j], base)) { ok=false; break; }
             }
         }
-        if(score === total && total > 0) {
+        if(ok && matchCount > 0) {
             let histJodi = data[i + shape.length - 1 + relR]?.[blankC + relC];
             if(histJodi && checkF(histJodi, selectedJodi.val)) {
-                matches.push(i);
+                matches.push(idx = i);
                 let next = data[i + shape.length - 1][blankC];
                 if(next && next!=="**") predictions.push(next);
             }
         }
     }
 
-    // Display 1.2.3 Check Lines
     let box = document.getElementById('status');
-    box.innerHTML = matches.length ? "" : "Niche records mein aisa 8-row pattern nahi mila.";
-    matches.slice(0, 5).forEach((idx, i) => {
+    box.innerHTML = matches.length ? "" : "No clean matches found.";
+    matches.slice(0, 3).forEach((idx, i) => {
         let div = document.createElement("div"); div.className="check-item";
-        div.innerHTML = `<span><b>${i+1}.</b> Match found at Week ${idx+1}</span> <span>View Record ➔</span>`;
+        div.innerHTML = `<span><b>${i+1}.</b> Match found Week ${idx+1}</span> <span>View ➔</span>`;
         div.onclick = () => { activeP = {start:idx, shape:shape}; render(); };
         box.appendChild(div);
     });
 
-    // Future Prediction (Top 3)
     let fPanel = document.getElementById('future-panel');
     let pList = document.getElementById('prediction-list');
     if(predictions.length) {
@@ -140,18 +144,13 @@ function checkF(v1, v2) {
 function loadCSV(input) {
     let fr = new FileReader();
     fr.onload = () => { 
-        let lines = fr.result.split('\n').filter(l=>l.trim());
-        data = lines.map(l => {
-            let cells = l.split(',').map(c => c.trim() || "**");
-            while(cells.length < col) cells.push("**");
-            return cells.slice(0, col);
-        });
+        data = fr.result.split('\n').filter(l=>l.trim()).map(l=>l.split(',').map(c=>c.trim()||"**").slice(0,col));
         render(); 
     };
     fr.readAsText(input.files[0]);
 }
 function addRow() { data.push(Array(col).fill("**")); render(); }
-function saveData() { localStorage.setItem("MILAN_FILE_DB", JSON.stringify(data)); alert("Data Saved Locally!"); }
+function saveData() { localStorage.setItem("MILAN_FILE_DB", JSON.stringify(data)); alert("Saved!"); }
 function resetAll() { selectedJodi = null; activeP = null; render(); document.getElementById('future-panel').style.display="none"; }
 
 function drawL() {
