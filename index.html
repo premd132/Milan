@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Milan Pro AI - Clean Logic</title>
+    <title>Milan Pro AI - Fixed Logic</title>
     <style>
         :root { --gold: #ffd700; --blue: #0084ff; --bg: #0f172a; --panel: #1e293b; --green: #00ff88; }
         * { box-sizing: border-box; font-family: sans-serif; margin: 0; padding: 0; }
@@ -15,20 +15,20 @@
         td, th { border: 1px solid #ddd; width: 45px; height: 45px; text-align: center; font-weight: 800; font-size: 14px; cursor: pointer; }
         th { background: #1e293b; color: white; font-size: 10px; }
         
-        /* Fixed 3-4 Circles Style */
         .circle { border: 3px solid var(--blue) !important; border-radius: 50% !important; background: rgba(0, 132, 255, 0.2); position: relative; z-index: 11; }
         .selected-jodi { background: rgba(255, 215, 0, 0.5) !important; border: 2px solid var(--gold) !important; }
         
         canvas { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 5; }
         .ai-card { background: var(--panel); padding: 15px; border-radius: 15px; border-top: 4px solid var(--gold); margin-top: 15px; }
         
-        .check-item { background: #111; padding: 12px; margin: 5px 0; border-left: 4px solid var(--blue); cursor: pointer; display: flex; justify-content: space-between; }
-        .future-box { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
-        .pair-chip { background: #000; color: var(--green); border: 2px solid var(--green); padding: 10px 15px; border-radius: 10px; font-size: 20px; font-weight: bold; }
+        .check-item { background: #111; padding: 12px; margin: 8px 0; border-left: 4px solid var(--blue); cursor: pointer; display: flex; justify-content: space-between; border-radius: 6px; transition: 0.2s; }
+        .check-item:hover { background: #222; transform: translateX(5px); }
+        .future-box { display: flex; gap: 15px; justify-content: center; margin-top: 15px; }
+        .pair-chip { background: #000; color: var(--green); border: 2px solid var(--green); padding: 12px 20px; border-radius: 12px; font-size: 24px; font-weight: bold; box-shadow: 0 0 10px rgba(0,255,136,0.3); }
     </style>
 </head>
 <body>
-    <h2 style="text-align:center; color:var(--gold); margin-bottom:15px;">MILAN CLEAN-SCAN AI</h2>
+    <h2 style="text-align:center; color:var(--gold); margin-bottom:15px;">MILAN PRO AI - ADVANCED</h2>
     
     <div class="toolbar">
         <input type="file" id="csv-m" style="display:none" onchange="loadCSV(this)" accept=".csv">
@@ -41,20 +41,20 @@
     <center><div class="table-container"><canvas id="cvs"></canvas><table id="tbl"></table></div></center>
 
     <div class="ai-card" id="future-panel" style="display:none;">
-        <h3 style="color:var(--green); text-align:center;">🚀 FUTURE AI: 3-PAIR PREDICTION</h3>
+        <h3 style="color:var(--green); text-align:center; margin-bottom:10px;">🚀 FUTURE AI: 3-PAIR PREDICTION</h3>
         <div class="future-box" id="prediction-list"></div>
     </div>
 
-    <div class="ai-card">
-        <h3 style="color:var(--gold);">✔ CHECK LINE (RESULTS)</h3>
-        <div id="status">Select Jodi -> Click Blank (**).</div>
+    <div class="ai-card" id="check-panel">
+        <h3 style="color:var(--gold); margin-bottom:10px;">✔ CHECK LINE (RESULTS)</h3>
+        <div id="status">Jodi select karein, fir Blank (**) par click karein.</div>
     </div>
 
 <script>
-let activeP = null, col = 4, selectedJodi = null;
+let activeP = null, col = 6, selectedJodi = null;
 const fams={"12":["12","17","21","26","62","67","71","76"],"13":["13","18","31","36","63","68","81","86"],"14":["14","19","41","46","64","69","91","96"],"15":["01","06","10","15","51","56","60","65"],"23":["23","28","32","37","73","78","82","87"],"24":["24","29","42","47","74","79","92","97"],"25":["02","07","20","25","52","57","70","75"],"34":["34","39","43","48","84","89","93","98"],"35":["03","08","30","35","53","58","80","85"],"45":["04","09","40","45","54","59","90","95"],"HR":["05","16","27","38","49","50","61","72","83","94"],"FR":["00","11","22","33","44","55","66","77","88","99"]};
 
-let data = JSON.parse(localStorage.getItem("MILAN_FILE_DB")) || [["**","**","**","**","**","**"]];
+let data = JSON.parse(localStorage.getItem("MILAN_FILE_DB")) || [["51","91","41","57","19","95"],["05","90","74","06","19","63"],["**","**","**","**","**","**"]];
 
 function render() {
     let h = "<tr><th>MON</th><th>TUE</th><th>WED</th><th>THU</th><th>FRI</th><th>SAT</th></tr>";
@@ -68,7 +68,7 @@ function render() {
 
 function cellClick(r, c, val) {
     if (val !== "**") { selectedJodi = { r, c, val }; activeP = null; render(); } 
-    else { if (!selectedJodi) return; processLogic(r, c); }
+    else { if (!selectedJodi) { alert("Pehle Jodi select karein!"); return; } processLogic(r, c); }
 }
 
 function processLogic(blankR, blankC) {
@@ -76,17 +76,14 @@ function processLogic(blankR, blankC) {
     for(let i=blankR-1; i>=0; i--) { if(data[i][blankC]!="**") { base=data[i][blankC]; break; } }
     if(base=="**") return;
 
-    // STEP: Find 3-4 Best Family Matches in last 8 rows
     let startRow = Math.max(0, blankR - 4);
     let shape = Array.from({length: blankR - startRow + 1}, () => Array(col).fill(0));
     let matchCount = 0;
 
-    // Loop reverse to find 4 most recent matches
     for(let i = blankR; i >= startRow; i--) {
         for(let j = 0; j < col; j++) {
             if(matchCount < 4 && data[i][j] !== "**" && checkF(data[i][j], base)) {
-                shape[i - startRow][j] = 1;
-                matchCount++;
+                shape[i - startRow][j] = 1; matchCount++;
             }
         }
     }
@@ -94,44 +91,56 @@ function processLogic(blankR, blankC) {
     activeP = { start: startRow, shape: shape };
     render();
 
-    // Search Logic for Check Line & Prediction
     let relR = selectedJodi.r - blankR;
     let relC = selectedJodi.c - blankC;
     let matches = [], predictions = [];
 
+    // Historical Search
     for(let i=0; i <= data.length - shape.length - 1; i++) {
         let ok = true;
-        for(let k=0; k<shape.length; k++) {
-            for(let j=0; j<col; j++) {
-                if(shape[k][j] && !checkF(data[i+k][j], base)) { ok=false; break; }
+        for(let k=0; k < shape.length; k++) {
+            for(let j=0; j < col; j++) {
+                if(shape[k][j] && !checkF(data[i+k][j], base)) { ok = false; break; }
             }
+            if(!ok) break;
         }
-        if(ok && matchCount > 0) {
+        
+        if(ok) {
             let histJodi = data[i + shape.length - 1 + relR]?.[blankC + relC];
             if(histJodi && checkF(histJodi, selectedJodi.val)) {
-                matches.push(idx = i);
-                let next = data[i + shape.length - 1][blankC];
-                if(next && next!=="**") predictions.push(next);
+                matches.push(i);
+                // Future Prediction logic: Agle din ka result pick karein
+                let nextVal = data[i + shape.length - 1][blankC];
+                if(nextVal && nextVal !== "**") predictions.push(nextVal);
             }
         }
     }
 
-    let box = document.getElementById('status');
-    box.innerHTML = matches.length ? "" : "No clean matches found.";
-    matches.slice(0, 3).forEach((idx, i) => {
-        let div = document.createElement("div"); div.className="check-item";
-        div.innerHTML = `<span><b>${i+1}.</b> Match found Week ${idx+1}</span> <span>View ➔</span>`;
-        div.onclick = () => { activeP = {start:idx, shape:shape}; render(); };
-        box.appendChild(div);
-    });
+    // Results Display
+    const box = document.getElementById('status');
+    const fPanel = document.getElementById('future-panel');
+    const pList = document.getElementById('prediction-list');
 
-    let fPanel = document.getElementById('future-panel');
-    let pList = document.getElementById('prediction-list');
-    if(predictions.length) {
-        fPanel.style.display = "block";
-        let unique = [...new Set(predictions)].slice(0, 3);
-        pList.innerHTML = unique.map(p => `<div class="pair-chip">${p}</div>`).join("");
-    } else { fPanel.style.display = "none"; }
+    if (matches.length > 0) {
+        box.innerHTML = "";
+        matches.slice(0, 5).forEach((idx, i) => {
+            let div = document.createElement("div"); div.className="check-item";
+            div.innerHTML = `<span><b>${i+1}.</b> Match Pattern Week ${idx+1}</span> <span>👁 View</span>`;
+            div.onclick = () => { activeP = {start:idx, shape:shape}; render(); };
+            box.appendChild(div);
+        });
+
+        if (predictions.length > 0) {
+            fPanel.style.display = "block";
+            let unique = [...new Set(predictions)].slice(0, 3);
+            pList.innerHTML = unique.map(p => `<div class="pair-chip">${p}</div>`).join("");
+        } else {
+            fPanel.style.display = "none";
+        }
+    } else {
+        box.innerHTML = "<div style='color:red;'>No matching history found for this pattern. Try another cell.</div>";
+        fPanel.style.display = "none";
+    }
 }
 
 function checkF(v1, v2) {
@@ -151,7 +160,7 @@ function loadCSV(input) {
 }
 function addRow() { data.push(Array(col).fill("**")); render(); }
 function saveData() { localStorage.setItem("MILAN_FILE_DB", JSON.stringify(data)); alert("Saved!"); }
-function resetAll() { selectedJodi = null; activeP = null; render(); document.getElementById('future-panel').style.display="none"; }
+function resetAll() { selectedJodi = null; activeP = null; render(); document.getElementById('future-panel').style.display="none"; document.getElementById('status').innerText = "Select Jodi -> Click Blank (**)."; }
 
 function drawL() {
     const cvs = document.getElementById('cvs'), ctx = cvs.getContext("2d"), tbl = document.getElementById('tbl');
