@@ -21,14 +21,6 @@
 </head>
 <body>
     <h2 style="text-align:center; color:var(--gold); margin-bottom:15px;">MILAN PRO AI</h2>
-    function exportToCSV() {
-    let csvContent = data.map(row => row.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'Milan_Data_Backup.csv';
-    a.click();
 }
     <div class="toolbar">
         <input type="file" id="csv-input" style="display:none" accept=".csv">
@@ -49,9 +41,15 @@ let activeP = null;
 let data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [["10","20","30","40","50","60"],["**","**","**","**","**","**"]];
 
 // --- CSV LOAD FUNCTION ---
-document.getElementById('csv-input').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+function exportToCSV() {
+    let csvContent = data.map(row => row.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Milan_Data_Backup.csv';
+    a.click();
+}
 
     const reader = new FileReader();
     reader.onload = function(e) {
