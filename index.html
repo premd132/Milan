@@ -10,18 +10,35 @@
         body { background: var(--bg); color: #fff; padding: 10px; }
         .toolbar { display: flex; gap: 8px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap; }
         .tool-btn { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; background: #334155; }
-        .table-container { position: relative; background: #fff; border-radius: 12px; padding: 8px; display: inline-block; }
+        .table-container { position: relative; background: #fff; border-radius: 12px; padding: 8px; display: inline-block; margin-bottom: 20px;}
         table { border-collapse: collapse; color: #000; position: relative; z-index: 10; }
         td, th { border: 1px solid #ddd; width: 48px; height: 48px; text-align: center; font-weight: 800; font-size: 14px; cursor: pointer; }
         th { background: #1e293b; color: white; font-size: 10px; }
         
-        .circle { border: 3px solid var(--blue) !important; border-radius: 50% !important; background: rgba(0, 132, 255, 0.15); }
-        .selected-jodi { background: rgba(255, 215, 0, 0.3) !important; border: 2px dashed var(--gold) !important; }
+        /* Marking Styles */
+        .circle { border: 3px solid var(--blue) !important; border-radius: 50% !important; background: rgba(0, 132, 255, 0.15); z-index: 12; position: relative;}
+        .selected-jodi { background: rgba(255, 215, 0, 0.4) !important; border: 2px dashed var(--gold) !important; }
         
         canvas { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 5; }
-        .ai-card { background: var(--panel); padding: 15px; border-radius: 15px; border-top: 4px solid var(--gold); margin-top: 20px; }
-        .match-item { background:#222; margin:8px 0; padding:12px; cursor:pointer; border-left:4px solid var(--gold); border-radius: 5px; transition: 0.2s; }
-        .match-item:hover { background: #2d2d2d; }
+        
+        /* AI Dashboard Styles */
+        .ai-card { background: var(--panel); padding: 15px; border-radius: 15px; border-top: 4px solid var(--gold); margin-top: 10px; }
+        .check-line-container { margin-top: 15px; max-height: 250px; overflow-y: auto; }
+        .match-item { 
+            background: #2a3441; 
+            margin: 8px 0; 
+            padding: 12px; 
+            cursor: pointer; 
+            border-left: 5px solid var(--blue); 
+            border-radius: 5px; 
+            display: flex; 
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+        .match-item:hover { background: #3d4a5d; transform: scale(1.02); }
+        .match-item b { color: var(--gold); }
     </style>
 </head>
 <body>
@@ -43,10 +60,11 @@
     </center>
 
     <div class="ai-card">
-        <div id="instruction" style="color: var(--gold); font-size: 13px; margin-bottom: 10px;">
-            Step 1: Click any JODI to lock it. <br>Step 2: Click a BLANK (**) cell to find matching history.
+        <h3 style="color:var(--gold); font-size: 16px; border-bottom: 1px solid #444; padding-bottom: 5px;">✔ CHECK LINE (RESULTS)</h3>
+        <div id="instruction" style="color: #ccc; font-size: 12px; margin: 10px 0;">
+            1. Lock a Jodi (Yellow) -> 2. Click Blank (**) -> 3. Select Match below.
         </div>
-        <div id="status">Waiting for selection...</div>
+        <div id="status" class="check-line-container">Waiting for selection...</div>
     </div>
 
 <script>
@@ -57,7 +75,6 @@ const fams={"12":["12","17","21","26","62","67","71","76"],"13":["13","18","31",
 
 let data = JSON.parse(localStorage.getItem("MILAN_FILE_DB")) || [["51","91","41","57","19","95"],["05","90","74","06","19","63"],["**","**","**","**","**","**"]];
 
-// --- ADDED MISSING loadCSV FUNCTION ---
 function loadCSV(input) {
     const file = input.files[0];
     if (file) {
@@ -101,7 +118,7 @@ function render() {
 function handleCellClick(r, c, val) {
     if (val !== "**") {
         selectedJodi = { r, c, val };
-        document.getElementById('instruction').innerText = "Jodi Locked! Now click a Blank (**) cell.";
+        document.getElementById('instruction').innerText = "Jodi Locked! Click a Blank (**) cell now.";
         render();
     } else {
         if (!selectedJodi) {
@@ -156,17 +173,25 @@ function findP(blankR, blankC) {
 
 function displayMatches(matches, shape) {
     let box = document.getElementById('status'); 
-    box.innerHTML = matches.length > 0 ? `<b>Found ${matches.length} Matches:</b>` : "No exact pattern found.";
-    matches.forEach(idx => {
+    if(matches.length === 0) {
+        box.innerHTML = "<div style='padding:10px; color:#ff4444;'>No matches found for this dual logic.</div>";
+        return;
+    }
+    
+    box.innerHTML = "";
+    matches.forEach((idx, i) => {
         let d = document.createElement("div"); 
         d.className = "match-item";
-        d.innerHTML = `Pattern Match Week ${idx+1} ➔`; 
-        d.onclick = () => { activeP={start:idx, shape:shape}; render(); };
+        d.innerHTML = `<span><b>Match #${i+1}</b> Found at Row ${idx+1}</span> <span>➔</span>`; 
+        d.onclick = () => { 
+            activeP = {start:idx, shape:shape}; 
+            render(); 
+        };
         box.appendChild(d);
     });
 }
 
-function resetSelection() { selectedJodi = null; activeP = null; render(); }
+function resetSelection() { selectedJodi = null; activeP = null; render(); document.getElementById('status').innerHTML = "Waiting for selection..."; }
 function checkF(v1, v2) { for(let k in fams) { if(fams[k].includes(v1) && fams[k].includes(v2)) return true; } return false; }
 function upd(r, c, el) { data[r][c] = el.innerText.trim(); }
 function addRow() { data.push(Array(col).fill("**")); render(); }
@@ -176,6 +201,7 @@ function drawL() {
     const cvs = document.getElementById('cvs'), ctx = cvs.getContext("2d"), tbl = document.getElementById('tbl');
     cvs.width = tbl.offsetWidth; cvs.height = tbl.offsetHeight;
     const cells = tbl.querySelectorAll(".circle"), rT = tbl.getBoundingClientRect();
+    ctx.clearRect(0,0,cvs.width,cvs.height);
     ctx.strokeStyle = "#00ff88"; ctx.lineWidth = 3; ctx.beginPath();
     cells.forEach((c, i) => { 
         const r = c.getBoundingClientRect(); 
